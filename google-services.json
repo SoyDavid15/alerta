@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "423307147483",
+    "project_id": "pandas-f7fff",
+    "storage_bucket": "pandas-f7fff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:423307147483:android:43b0f44b9559c14920f4fe",
+        "android_client_info": {
+          "package_name": "com.miempresa.pandas"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDruNg6Sep5RzGn6cwKUDymV9_RqLJOnQ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

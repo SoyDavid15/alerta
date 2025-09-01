@@ -1,75 +1,114 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from "react";
+import { Modal, StyleSheet, View } from "react-native";
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { RFValue } from "react-native-responsive-fontsize";
+import Alertas from "../../app/Screens/Alertas";
+import NavBar from "../../app/Screens/NavBar";
+import SOSOptions from "../../app/Screens/SOSOptions";
+import DenunciaVisualizar from "../Screens/DenunciaVisualizar";
+import Principal from "../Screens/Principal";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const TABS = {
+  alertas: Alertas,
+  // We can't render Principal directly anymore if we want to show DenunciaVisualizar in the same tab
+} as const;
+
+type ActiveTab = keyof typeof TABS;
 
 export default function HomeScreen() {
+  const [activeTab, setActiveTab] = useState<ActiveTab | 'denuncias'>('denuncias');
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedDelitoId, setSelectedDelitoId] = useState<string | null>(null);
+
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(0);
+
+  const handleToggleSOS = () => {
+    setIsModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setIsModalVisible(false);
+  };
+
+  const handleCloseSOS = () => {
+    scale.value = withTiming(0, { duration: 150 });
+    opacity.value = withTiming(0, { duration: 200 }, (isFinished) => {
+      if (isFinished) {
+        runOnJS(closeModal)();
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (isModalVisible) {
+      opacity.value = withTiming(1, { duration: 100 });
+      scale.value = withSpring(1, { damping: 15, stiffness: 120 });
+    } else {
+      opacity.value = 0;
+      scale.value = 0;
+    }
+  }, [isModalVisible, opacity, scale]);
+
+  const animatedModalContainerStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const animatedModalContentStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  const handleDelitoPress = (id: string) => {
+    setSelectedDelitoId(id);
+  };
+
+  const handleCloseDenuncia = () => {
+    setSelectedDelitoId(null);
+  };
+
+  const renderContent = () => {
+    if (activeTab === 'denuncias') {
+      if (selectedDelitoId) {
+        return <DenunciaVisualizar id={selectedDelitoId} onClose={handleCloseDenuncia} />;
+      }
+      return <Principal onDelitoPress={handleDelitoPress} />;
+    }
+    const ActiveScreen = TABS[activeTab];
+    return <ActiveScreen />;
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <View style={styles.UIContainer}>
+        {renderContent()}
+      </View>
+      <NavBar activeTab={activeTab} onSelectTab={(tab) => { setActiveTab(tab); setSelectedDelitoId(null); }} onToggleSOS={handleToggleSOS} />
+      <Modal animationType="none" transparent={true} visible={isModalVisible} onRequestClose={handleCloseSOS}>
+        <Animated.View style={[styles.modalContainer, animatedModalContainerStyle, animatedModalContentStyle]}>
+          <SOSOptions onClose={handleCloseSOS} />
+        </Animated.View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    backgroundColor: "#0b0b0c",
+  },
+  UIContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    paddingBottom: RFValue(64), // espacio para NavBar fijo
+    backgroundColor: "transparent",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
 });
