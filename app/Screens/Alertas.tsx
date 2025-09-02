@@ -5,6 +5,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, FlatList, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { WebView } from 'react-native-webview';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/theme/Theme';
 import { database } from '../../firebaseConfig';
 
 export interface AlertaEmergencia {
@@ -18,6 +20,7 @@ export interface AlertaEmergencia {
 }
 
 const AlertaItem = ({ item, currentLocation }: { item: AlertaEmergencia; currentLocation?: { latitude: number; longitude: number } | null }) => {
+  const { colors, theme } = useTheme();
   const haversine = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const toRad = (deg: number) => (deg * Math.PI) / 180;
     const R = 6371;
@@ -37,11 +40,30 @@ const AlertaItem = ({ item, currentLocation }: { item: AlertaEmergencia; current
     } catch { distanciaText = 'No disponible'; }
   }
 
+  const typeColor = item.tipo?.toLowerCase().includes('bombero')
+    ? '#ff3b30'
+    : item.tipo?.toLowerCase().includes('ambul')
+    ? '#34c759'
+    : item.tipo?.toLowerCase().includes('pol')
+    ? '#0a84ff'
+    : '#ff9f0a';
+
   return (
-    <View style={styles.alertaItem}>
-      <Text style={styles.alertaTipo}>ALERTA: {item.tipo}</Text>
-      <Text style={styles.alertaDistancia}>{distanciaText}</Text>
-      <Text style={styles.alertaTimestamp}>{item.timestamp ? item.timestamp.toDate().toLocaleString() : 'Enviando...'}</Text>
+    <View style={[styles.alertCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: typeColor }]}> 
+      <View style={styles.alertRow}>
+        <View style={[styles.alertIconWrap, { backgroundColor: theme==='dark' ? 'rgba(255,255,255,0.08)' : '#ececf2' }]}> 
+          <Ionicons name={'alert-circle-outline'} size={20} color={typeColor} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.alertTitle, { color: colors.text }]} numberOfLines={1}>Alerta: {item.tipo}</Text>
+          <View style={styles.alertMetaRow}>
+            <Ionicons name="location-outline" size={14} color={colors.muted} />
+            <Text style={[styles.metaText, { color: colors.muted }]}>{distanciaText}</Text>
+            <Ionicons name="time-outline" size={14} color={colors.muted} style={{ marginLeft: 10 }} />
+            <Text style={[styles.metaText, { color: colors.muted }]}>{item.timestamp ? item.timestamp.toDate().toLocaleString() : 'Enviando...'}</Text>
+          </View>
+        </View>
+      </View>
     </View>
   );
 };
@@ -50,7 +72,7 @@ const Alertas = () => {
   const [alertas, setAlertas] = useState<AlertaEmergencia[]>([]);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const webviewRef = useRef<any>(null);
-
+  
   const screenHeight = Dimensions.get('window').height;
   const mapHeight = Math.round(screenHeight * 0.8); // map ocupa 80% de la pantalla
 
@@ -100,8 +122,9 @@ const Alertas = () => {
 
   return (
     <View style={styles.container}>
-  {/* Mapa como fondo absoluto (full width) */}
-  <View style={[styles.mapBackground, { height: mapHeight }]}> 
+      
+      {/* Mapa como fondo absoluto (full width) */}
+      <View style={[styles.mapBackground, { height: mapHeight }]}> 
         <WebView
           ref={webviewRef}
           originWhitelist={["*"]}
@@ -112,9 +135,10 @@ const Alertas = () => {
         />
       </View>
 
-  {/* Bottom sheet con la lista de alertas */}
-  <BottomSheet alerts={alertas} currentLocation={currentLocation} />
-    </View>
+      {/* Bottom sheet con la lista de alertas */}
+      <BottomSheet alerts={alertas} currentLocation={currentLocation} />
+
+          </View>
   );
 };
 
@@ -160,6 +184,41 @@ const styles = StyleSheet.create({
     color: '#f0f0f0',
     textAlign: 'right',
     marginTop: 8,
+  },
+  alertCard: {
+    padding: 14,
+    marginVertical: 8,
+    marginHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderLeftWidth: 4,
+  },
+  alertRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  alertIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 2,
+  },
+  alertTitle: {
+    fontSize: RFValue(14),
+    fontWeight: '800',
+  },
+  alertMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 6,
+  },
+  metaText: {
+    fontSize: RFValue(11),
+    marginLeft: 4,
   },
   mapBackground: {
   position: 'relative',
@@ -228,6 +287,7 @@ const styles = StyleSheet.create({
 
 // BottomSheet component (simple, draggable)
 const BottomSheet = ({ alerts, currentLocation }: { alerts: AlertaEmergencia[]; currentLocation: { latitude: number; longitude: number } | null }) => {
+  const { colors, theme } = useTheme();
   const screenHeight = Dimensions.get('window').height;
   const SHEET_HEIGHT = screenHeight; // sheet full-screen container
   // collapsed shows bottom 40% of screen => translateY = screenHeight * 0.6
@@ -279,13 +339,13 @@ const BottomSheet = ({ alerts, currentLocation }: { alerts: AlertaEmergencia[]; 
 
   return (
     <Animated.View style={[styles.bottomSheet, { height: SHEET_HEIGHT }, animatedStyle]} pointerEvents="box-none">
-      <Animated.View style={[styles.sheetContainer, { height: SHEET_HEIGHT }]}>
+      <Animated.View style={[styles.sheetContainer, { height: SHEET_HEIGHT, backgroundColor: colors.card }]}> 
         {/* attach pan handlers only to the handle so the FlatList can receive scroll gestures; also allow tap to toggle */}
         <Pressable style={styles.sheetHandle} {...pan.panHandlers} onPress={toggleSheet}>
-          <View style={styles.sheetHandleBar} />
+          <View style={[styles.sheetHandleBar, { backgroundColor: theme==='dark' ? 'rgba(255,255,255,0.18)' : '#cfd0d4' }]} />
         </Pressable>
         <View style={styles.sheetHeader}>
-          <Text style={styles.sheetTitle}>Alertas</Text>
+          <Text style={[styles.sheetTitle, { color: colors.text }]}>Alertas</Text>
           {/* removed toggle button (auto-expand on scroll instead) */}
           <View style={{ width: 48 }} />
         </View>
@@ -294,7 +354,7 @@ const BottomSheet = ({ alerts, currentLocation }: { alerts: AlertaEmergencia[]; 
             data={alerts}
             keyExtractor={(i) => i.id}
             renderItem={({ item }) => <AlertaItem item={item} currentLocation={currentLocation} />}
-            ListEmptyComponent={<Text style={styles.emptyListText}>No hay alertas de emergencia activas.</Text>}
+            ListEmptyComponent={<Text style={[styles.emptyListText, { color: colors.muted }]}>No hay alertas de emergencia activas.</Text>}
             onScroll={({ nativeEvent }) => {
               const y = nativeEvent.contentOffset?.y || 0;
               // if user scrolls down (swipes up on content, y decreases to 0) and they are at top, expand sheet

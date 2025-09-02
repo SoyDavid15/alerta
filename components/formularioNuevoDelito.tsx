@@ -1,8 +1,8 @@
-
+import { db } from '@/firebaseConfig';
+import { getAuth } from 'firebase/auth';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
-import { db } from '@/firebaseConfig';
+import { StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface FormularioNuevoDelitoProps {
     onClose: () => void;
@@ -11,6 +11,7 @@ interface FormularioNuevoDelitoProps {
 const FormularioNuevoDelito: React.FC<FormularioNuevoDelitoProps> = ({ onClose }) => {
     const [titulo, setTitulo] = useState('');
     const [descripcion, setDescripcion] = useState('');
+    const [isAnonymous, setIsAnonymous] = useState(false);
 
     const handleSubmit = async () => {
         if (!titulo.trim() || !descripcion.trim()) {
@@ -19,10 +20,17 @@ const FormularioNuevoDelito: React.FC<FormularioNuevoDelitoProps> = ({ onClose }
         }
 
         try {
-                        await addDoc(collection(db, 'Delitos'), {
+            const { currentUser } = getAuth();
+            const userId = isAnonymous ? null : (currentUser?.uid || null);
+            const userName = isAnonymous ? 'Anónimo' : (currentUser?.displayName || currentUser?.email || 'Anónimo');
+
+            await addDoc(collection(db, 'Delitos'), {
                 tipo: titulo,
                 descripcion: descripcion,
                 timestamp: serverTimestamp(),
+                anonymous: isAnonymous,
+                userId,
+                userName,
             });
             console.log('Denuncia agregada correctamente');
             onClose();
@@ -38,41 +46,110 @@ const FormularioNuevoDelito: React.FC<FormularioNuevoDelitoProps> = ({ onClose }
             <TextInput
                 style={styles.input}
                 placeholder="Título"
+                placeholderTextColor="#8e8e93"
                 value={titulo}
                 onChangeText={setTitulo}
             />
             <TextInput
-                style={styles.input}
+                style={[styles.input, styles.inputArea]}
                 placeholder="Descripción"
+                placeholderTextColor="#8e8e93"
                 value={descripcion}
                 onChangeText={setDescripcion}
                 multiline
             />
-            <Button title="Agregar Denuncia" onPress={handleSubmit} />
-            <Button title="Cancelar" onPress={onClose} color="red" />
+            <View style={styles.anonRow}>
+                <Text style={styles.anonLabel}>Denuncia anónima</Text>
+                <Switch
+                    value={isAnonymous}
+                    onValueChange={setIsAnonymous}
+                    thumbColor={isAnonymous ? '#007AFF' : '#f4f3f4'}
+                    trackColor={{ false: '#767577', true: '#81b0ff' }}
+                />
+            </View>
+            <View style={styles.actionsRow}>
+                <TouchableOpacity style={styles.secondaryButton} onPress={onClose}>
+                    <Text style={styles.secondaryButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.primaryButton} onPress={handleSubmit}>
+                    <Text style={styles.primaryButtonText}>Agregar denuncia</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: 'white',
+        backgroundColor: '#2c2c2e',
         padding: 20,
-        borderRadius: 10,
-        width: '80%',
+        borderRadius: 16,
+        width: '90%',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.06)'
     },
     title: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: 'bold',
-        marginBottom: 20,
+        marginBottom: 16,
         textAlign: 'center',
+        color: '#fff'
     },
     input: {
         borderWidth: 1,
-        borderColor: '#ccc',
-        padding: 10,
-        borderRadius: 5,
-        marginBottom: 15,
+        borderColor: '#3a3a3c',
+        backgroundColor: '#1c1c1e',
+        color: '#fff',
+        padding: 12,
+        borderRadius: 10,
+        marginBottom: 12,
+    },
+    inputArea: {
+        minHeight: 100,
+        textAlignVertical: 'top',
+    },
+    anonRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    anonLabel: {
+        fontSize: 14,
+        color: '#e5e5ea',
+    },
+    actionsRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 4,
+    },
+    primaryButton: {
+        flex: 1,
+        backgroundColor: '#007AFF',
+        paddingVertical: 14,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    primaryButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    secondaryButton: {
+        flex: 1,
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: '#ff453a',
+        paddingVertical: 14,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    secondaryButtonText: {
+        color: '#ff453a',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });
 

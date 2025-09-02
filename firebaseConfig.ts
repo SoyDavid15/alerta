@@ -2,6 +2,8 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -15,8 +17,23 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Inicializar Auth con persistencia en React Native (AsyncStorage) sin romper tipado
+try {
+  // Cargar dinámicamente para evitar errores de tipos si no se exporta en tu versión
+  const authMod: any = require('firebase/auth');
+  if (authMod?.initializeAuth && authMod?.getReactNativePersistence) {
+    authMod.initializeAuth(app, {
+      persistence: authMod.getReactNativePersistence(AsyncStorage),
+    });
+  }
+} catch (e) {
+  // Ignorar si no está disponible o ya fue inicializado
+}
+
 const db = getFirestore(app);
 const database = getDatabase(app);
+const auth = getAuth(app);
 
-export { database, db };
+export { database, db, auth };
 

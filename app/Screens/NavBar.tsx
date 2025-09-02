@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
-
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/theme/Theme';
 
 type NavBarProps = {
   activeTab: 'denuncias' | 'alertas';
@@ -10,30 +11,46 @@ type NavBarProps = {
 };
 
 const NavBar: React.FC<NavBarProps> = ({ activeTab, onSelectTab, onToggleSOS }) => {
+  const { colors, theme } = useTheme();
+
+  const isAlertas = activeTab === 'alertas';
+  const isDenuncias = activeTab === 'denuncias';
+
+  const activeBg = theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#e7e7ea';
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.header, borderTopColor: colors.border }]}> 
+      {/* Alertas */}
       <TouchableOpacity
-        style={[styles.nav, activeTab === 'alertas' ? styles.activeNav : null]}
+        style={[styles.navBtn, isAlertas && { backgroundColor: activeBg }]}
         onPress={() => onSelectTab('alertas')}
         accessibilityLabel="Ir a alertas"
+        activeOpacity={0.85}
       >
-        <Text style={styles.navText}>Alertas</Text>
+        <Ionicons name="notifications-outline" size={22} color={isAlertas ? colors.text : colors.muted} />
+        <Text style={[styles.navText, { color: isAlertas ? colors.text : colors.muted }]}>Alertas</Text>
       </TouchableOpacity>
 
+      {/* SOS */}
       <TouchableOpacity
-        style={[styles.nav, styles.SOS]}
+        style={[styles.navBtn, styles.sosBg]}
         onPress={onToggleSOS}
         accessibilityLabel="Abrir SOS"
+        activeOpacity={0.9}
       >
-        <Text style={[styles.navText, styles.SOSButton]}>SOS</Text>
+        <Ionicons name="alert-circle" size={20} color="#fff" />
+        <Text style={[styles.navText, { color: '#fff' }]}>SOS</Text>
       </TouchableOpacity>
 
+      {/* Denuncias */}
       <TouchableOpacity
-        style={[styles.nav, activeTab === 'denuncias' ? styles.activeNav : null]}
+        style={[styles.navBtn, isDenuncias && { backgroundColor: activeBg }]}
         onPress={() => onSelectTab('denuncias')}
         accessibilityLabel="Ir a denuncias"
+        activeOpacity={0.85}
       >
-        <Text style={styles.navText}>Denuncias</Text>
+        <Ionicons name="list-outline" size={22} color={isDenuncias ? colors.text : colors.muted} />
+        <Text style={[styles.navText, { color: isDenuncias ? colors.text : colors.muted }]}>Denuncias</Text>
       </TouchableOpacity>
     </View>
   );
@@ -41,50 +58,37 @@ const NavBar: React.FC<NavBarProps> = ({ activeTab, onSelectTab, onToggleSOS }) 
 
 const styles = StyleSheet.create({
   container: {
-  position: 'absolute',
-  left: 0,
-  right: 0,
-  bottom: 0,
-  height: RFValue(56),
-  backgroundColor: '#1a1a1b',
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  paddingHorizontal: RFValue(12),
-  zIndex: 100,
-  borderTopWidth: 0.5,
-  borderTopColor: 'rgba(255,255,255,0.04)',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: RFValue(64),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: RFValue(8),
+    paddingBottom: 0, // pegado al borde inferior
+    zIndex: 100,
+    borderTopWidth: 1,
   },
-  SOSButton:{
-    backgroundColor: "#ff0000",
+  navBtn: {
+    flexGrow: 1,
+    flexBasis: 0,
+    height: RFValue(48),
+    marginHorizontal: RFValue(4),
     borderRadius: 12,
-    paddingHorizontal: RFValue(25),
-    paddingVertical: RFValue(15),
-  },
-
-  nav: {
-  flex: 1,
-  alignItems: 'center',
-  justifyContent: 'center',
-  paddingVertical: RFValue(6),
-  paddingHorizontal: RFValue(8),
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
   },
   navText: {
-  color: '#e8e8ea',
-  fontSize: RFValue(14),
-  fontWeight: '600',
-  textAlign: 'center',
-  includeFontPadding: false,
+    fontSize: RFValue(11),
+    fontWeight: '700',
+    includeFontPadding: false,
   },
-  SOS: {
-    backgroundColor: 'transparent',
+  sosBg: {
+    backgroundColor: '#ff3040',
   },
-  activeNav: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 12,
-    paddingHorizontal: RFValue(12),
-    paddingVertical: RFValue(6),
-  }
 });
 
 export default NavBar;
