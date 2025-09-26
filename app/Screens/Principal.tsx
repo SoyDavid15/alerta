@@ -1,17 +1,17 @@
 
+import FormularioNuevoDelito from '@/components/formularioNuevoDelito';
+import SideDrawer from '@/components/SideDrawer';
+import { db } from '@/firebaseConfig';
+import { useTheme } from '@/theme/Theme';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { VideoView, useVideoPlayer } from 'expo-video';
-import { addDoc, collection, deleteDoc, doc, getDoc, increment, onSnapshot, orderBy, query, Timestamp, updateDoc, setDoc } from 'firebase/firestore';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { getAuth } from 'firebase/auth';
+import { addDoc, collection, deleteDoc, doc, getDoc, increment, onSnapshot, orderBy, query, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import SideDrawer from '@/components/SideDrawer';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { RFValue } from "react-native-responsive-fontsize";
-import { useTheme } from '@/theme/Theme';
-import FormularioNuevoDelito from '@/components/formularioNuevoDelito';
-import { db } from '@/firebaseConfig';
-import { getAuth } from 'firebase/auth';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 // Definimos una interfaz para tipar los objetos de delito.
@@ -244,7 +244,7 @@ export default function Principal({ onDelitoPress }: PrincipalProps) {
             <TouchableOpacity style={styles.headerMenuBtn} onPress={() => setDrawerOpen(true)} accessibilityLabel="Abrir menú">
               <Ionicons name="menu" size={24} color={colors.icon} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Denuncias</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Publicaciones</Text>
             <View style={{ width: 40 }} />
           </View>
         </SafeAreaView>

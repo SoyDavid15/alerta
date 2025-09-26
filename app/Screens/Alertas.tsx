@@ -1,3 +1,5 @@
+import { useTheme } from '@/theme/Theme';
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { onValue, ref } from 'firebase/database';
 import { Timestamp } from 'firebase/firestore';
@@ -5,8 +7,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, FlatList, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { WebView } from 'react-native-webview';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/theme/Theme';
 import { database } from '../../firebaseConfig';
 
 export interface AlertaEmergencia {
@@ -127,7 +127,7 @@ const Alertas = () => {
       <View style={[styles.mapBackground, { height: mapHeight }]}> 
         <WebView
           ref={webviewRef}
-          originWhitelist={["*"]}
+          originWhitelist={["*" ]}
           source={{ html: HTML_MAP }}
           style={styles.map}
           javaScriptEnabled
@@ -401,7 +401,7 @@ const HTML_MAP = `
         Object.values(markers).forEach(m => map.removeLayer(m));
         for (const p of points) {
           if (p.lat == null || p.lng == null) continue;
-          const m = L.marker([p.lat, p.lng]).addTo(map).bindPopup(p.tipo + (p.timestamp ? ('\\n' + new Date(p.timestamp).toLocaleString()) : ''));
+          const m = L.marker([p.lat, p.lng]).addTo(map).bindPopup(p.tipo + (p.timestamp ? ('\n' + new Date(p.timestamp).toLocaleString()) : ''));
           markers[p.id] = m;
         }
         const latlngs = points.filter(p => p.lat != null && p.lng != null).map(p => [p.lat, p.lng]);

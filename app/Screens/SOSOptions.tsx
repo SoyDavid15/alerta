@@ -1,30 +1,67 @@
-import * as Location from 'expo-location';
-import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { RFValue } from 'react-native-responsive-fontsize';
-import { Ionicons } from '@expo/vector-icons';
-import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { push, ref } from 'firebase/database';
-import { getAuth } from 'firebase/auth';
 import { database, db } from '@/firebaseConfig';
 import { useTheme } from '@/theme/Theme';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import { getAuth } from 'firebase/auth';
+import { push, ref } from 'firebase/database';
+import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Easing, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { RFValue } from 'react-native-responsive-fontsize';
 
 // Tipos
 interface SOSOptionsProps { onClose: () => void; }
 interface LocationInfo { latitude: number; longitude: number; }
 
-type EmergencyType = 'Policía' | 'Ambulancia' | 'Bomberos';
+type EmergencyType = 'Emergencia' | 'Eventos' | 'Recomendación';
 
 const EMERGENCY_CONFIG: Record<EmergencyType, { color: string; icon: any }> = {
-  'Policía': { color: '#0a84ff', icon: 'shield-outline' },
-  'Ambulancia': { color: '#34c759', icon: 'medical-outline' },
-  'Bomberos': { color: '#ff3b30', icon: 'flame-outline' },
+  'Emergencia': { color: '#ff3b30', icon: 'warning-outline' },
+  'Eventos': { color: '#0a84ff', icon: 'calendar-outline' },
+  'Recomendación': { color: '#34c759', icon: 'bulb-outline' },
 };
+
+const EmergencyForm: React.FC<{ type: EmergencyType, onSubmit: (title: string, description: string) => void, onCancel: () => void }> = ({ type, onSubmit, onCancel }) => {
+    const { colors } = useTheme();
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+
+    return (
+        <View style={styles.formContainer}>
+            <Text style={[styles.formTitle, { color: colors.text }]}>Nueva Alerta: {type}</Text>
+            <TextInput
+                style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} 
+                placeholder="Título"
+                placeholderTextColor={colors.muted}
+                value={title}
+                onChangeText={setTitle}
+            />
+            <TextInput
+                style={[styles.input, styles.inputArea, { backgroundColor: colors.card, color: colors.text }]} 
+                placeholder="Descripción"
+                placeholderTextColor={colors.muted}
+                value={description}
+                onChangeText={setDescription}
+                multiline
+            />
+            <View style={styles.formActions}>
+                <TouchableOpacity style={[styles.formButton, styles.cancelButton]} onPress={onCancel}>
+                    <Text style={styles.formButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.formButton, { backgroundColor: EMERGENCY_CONFIG[type].color }]} onPress={() => onSubmit(title, description)}>
+                    <Text style={styles.formButtonText}>Enviar</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+}
 
 const SOSOptions: React.FC<SOSOptionsProps> = ({ onClose }) => {
   const { colors, theme } = useTheme();
   const [cachedLocation, setCachedLocation] = useState<LocationInfo | null>(null);
   const [sending, setSending] = useState<EmergencyType | null>(null);
+  const [formVisible, setFormVisible] = useState(false);
+  const [selectedType, setSelectedType] = useState<EmergencyType | null>(null);
 
   // Animaciones: radar (dos pulsos) + entrada del sheet
   const pulse1 = useRef(new Animated.Value(0)).current;
@@ -58,13 +95,13 @@ const SOSOptions: React.FC<SOSOptionsProps> = ({ onClose }) => {
         try {
           const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Lowest });
           if (pos && mounted) setCachedLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-        } catch {}
+        } catch {} 
       } catch (err) { console.warn('Permisos/ubicación:', err); }
     })();
     return () => { mounted = false };
   }, []);
 
-  const handleEmergencyPress = async (tipo: EmergencyType) => {
+  const handleEmergencyPress = async (tipo: EmergencyType, title: string, description: string) => {
     setSending(tipo);
     let locationData: Partial<LocationInfo> = {};
     let locationString = 'Ubicación no disponible';
@@ -80,7 +117,7 @@ const SOSOptions: React.FC<SOSOptionsProps> = ({ onClose }) => {
             locationData = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
             locationString = `Lat ${pos.coords.latitude.toFixed(4)}, Lon ${pos.coords.longitude.toFixed(4)}`;
           }
-        } catch {}
+        } catch {} 
       }
 
       // Leer state del perfil
@@ -90,12 +127,14 @@ const SOSOptions: React.FC<SOSOptionsProps> = ({ onClose }) => {
         try {
           const up = await getDoc(doc(db, 'Users', uid));
           userState = up.exists() ? ((up.data() as any)?.state || null) : null;
-        } catch {}
+        } catch {} 
       }
 
       // RTDB
       await push(ref(database, 'alertas_emergencia'), {
         tipo,
+        title,
+        description,
         timestamp: Date.now(),
         ...locationData,
         ...(userState ? { state: userState } : {}),
@@ -105,6 +144,8 @@ const SOSOptions: React.FC<SOSOptionsProps> = ({ onClose }) => {
       try {
         await addDoc(collection(db, 'AlertasEmergencia'), {
           tipo,
+          title,
+          description,
           timestamp: serverTimestamp(),
           latitude: (locationData as any)?.latitude,
           longitude: (locationData as any)?.longitude,
@@ -121,8 +162,14 @@ const SOSOptions: React.FC<SOSOptionsProps> = ({ onClose }) => {
       Alert.alert('Error', 'No se pudo enviar la alerta. Inténtalo de nuevo.');
     } finally {
       setSending(null);
+      setFormVisible(false);
     }
   };
+
+  const handleButtonPress = (type: EmergencyType) => {
+      setSelectedType(type);
+      setFormVisible(true);
+  }
 
   // Derivados de animación para el radar
   const pulseStyle = (val: Animated.Value) => ({
@@ -130,6 +177,10 @@ const SOSOptions: React.FC<SOSOptionsProps> = ({ onClose }) => {
     opacity: val.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] }),
     backgroundColor: '#ff3b3055',
   });
+
+  if (formVisible && selectedType) {
+      return <EmergencyForm type={selectedType} onSubmit={(title, description) => handleEmergencyPress(selectedType, title, description)} onCancel={() => setFormVisible(false)} />
+  }
 
   return (
     <View style={[styles.overlay, { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.35)' }]}>
@@ -142,7 +193,7 @@ const SOSOptions: React.FC<SOSOptionsProps> = ({ onClose }) => {
 
       {/* Sheet inferior */}
       <Animated.View style={[styles.sheet, { backgroundColor: colors.card, borderColor: colors.border, transform: [{ translateY: slide }] }]}>
-        <Text style={[styles.title, { color: colors.text }]}>¿Cuál es tu emergencia?</Text>
+        <Text style={[styles.title, { color: colors.text }]}>¿Cuál es tu alerta?</Text>
         <Text style={[styles.subtitle, { color: colors.muted }]}>Selecciona una opción para avisar rápidamente</Text>
 
         <View style={styles.actionsRow}>
@@ -152,8 +203,8 @@ const SOSOptions: React.FC<SOSOptionsProps> = ({ onClose }) => {
             return (
               <TouchableOpacity
                 key={key}
-                style={[styles.actionBtn, { backgroundColor: cfg.color, opacity: isSending ? 0.7 : 1 }]}
-                onPress={() => handleEmergencyPress(key)}
+                style={[styles.actionBtn, { backgroundColor: cfg.color, opacity: isSending ? 0.7 : 1 }]} 
+                onPress={() => handleButtonPress(key)}
                 activeOpacity={0.9}
                 accessibilityLabel={`Solicitar ${key}`}
                 disabled={!!sending}
@@ -167,7 +218,7 @@ const SOSOptions: React.FC<SOSOptionsProps> = ({ onClose }) => {
 
         <TouchableOpacity
           onPress={onClose}
-          style={[styles.cancelBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#f1f1f4', borderColor: colors.border }]}
+          style={[styles.cancelBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#f1f1f4', borderColor: colors.border }]} 
           accessibilityLabel="Cancelar"
           activeOpacity={0.85}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -232,13 +283,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
+    flexDirection: 'column',
+    gap: 4,
+    paddingHorizontal: 4,
   },
   actionText: {
     color: '#fff',
     fontWeight: '800',
     letterSpacing: 0.3,
+    fontSize: RFValue(12),
+    textAlign: 'center',
   },
   cancelBtn: {
     marginTop: 20,
@@ -255,6 +309,45 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.3,
   },
+  formContainer: {
+      padding: 20,
+  },
+  formTitle: {
+      fontSize: RFValue(18),
+      fontWeight: 'bold',
+      marginBottom: 16,
+      textAlign: 'center',
+  },
+  input: {
+      borderWidth: 1,
+      borderColor: '#ccc',
+      padding: 12,
+      borderRadius: 10,
+      marginBottom: 12,
+  },
+  inputArea: {
+      minHeight: 100,
+      textAlignVertical: 'top',
+  },
+  formActions: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginTop: 10,
+  },
+  formButton: {
+      paddingVertical: 12,
+      paddingHorizontal: 30,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+  },
+  cancelButton: {
+      backgroundColor: '#ccc',
+  },
+  formButtonText: {
+      color: '#fff',
+      fontWeight: 'bold',
+  }
 });
 
 export default SOSOptions;

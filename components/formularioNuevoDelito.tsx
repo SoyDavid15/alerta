@@ -9,12 +9,12 @@ interface FormularioNuevoDelitoProps {
 }
 
 const FormularioNuevoDelito: React.FC<FormularioNuevoDelitoProps> = ({ onClose }) => {
-    const [titulo, setTitulo] = useState('');
+    const [tipo, setTipo] = useState<'Emergencia' | 'Eventos' | 'Recomendación'>('Emergencia');
     const [descripcion, setDescripcion] = useState('');
     const [isAnonymous, setIsAnonymous] = useState(false);
 
     const handleSubmit = async () => {
-        if (!titulo.trim() || !descripcion.trim()) {
+        if (!descripcion.trim()) {
             alert('Por favor, complete todos los campos.');
             return;
         }
@@ -25,7 +25,7 @@ const FormularioNuevoDelito: React.FC<FormularioNuevoDelitoProps> = ({ onClose }
             const userName = isAnonymous ? 'Anónimo' : (currentUser?.displayName || currentUser?.email || 'Anónimo');
 
             await addDoc(collection(db, 'Delitos'), {
-                tipo: titulo,
+                tipo: tipo,
                 descripcion: descripcion,
                 timestamp: serverTimestamp(),
                 anonymous: isAnonymous,
@@ -42,14 +42,18 @@ const FormularioNuevoDelito: React.FC<FormularioNuevoDelitoProps> = ({ onClose }
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Nueva Denuncia</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Título"
-                placeholderTextColor="#8e8e93"
-                value={titulo}
-                onChangeText={setTitulo}
-            />
+            <Text style={styles.title}>Nueva Publicacion</Text>
+            <View style={styles.typeSelector}>
+                <TouchableOpacity onPress={() => setTipo('Emergencia')} style={[styles.typeButton, tipo === 'Emergencia' && styles.typeButtonSelected]}>
+                    <Text style={styles.typeButtonText}>Emergencia</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setTipo('Eventos')} style={[styles.typeButton, tipo === 'Eventos' && styles.typeButtonSelected]}>
+                    <Text style={styles.typeButtonText}>Eventos</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setTipo('Recomendación')} style={[styles.typeButton, tipo === 'Recomendación' && styles.typeButtonSelected]}>
+                    <Text style={styles.typeButtonText}>Recomendación</Text>
+                </TouchableOpacity>
+            </View>
             <TextInput
                 style={[styles.input, styles.inputArea]}
                 placeholder="Descripción"
@@ -59,7 +63,7 @@ const FormularioNuevoDelito: React.FC<FormularioNuevoDelitoProps> = ({ onClose }
                 multiline
             />
             <View style={styles.anonRow}>
-                <Text style={styles.anonLabel}>Denuncia anónima</Text>
+                <Text style={styles.anonLabel}>Publicacion anónima</Text>
                 <Switch
                     value={isAnonymous}
                     onValueChange={setIsAnonymous}
@@ -72,7 +76,7 @@ const FormularioNuevoDelito: React.FC<FormularioNuevoDelitoProps> = ({ onClose }
                     <Text style={styles.secondaryButtonText}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.primaryButton} onPress={handleSubmit}>
-                    <Text style={styles.primaryButtonText}>Agregar denuncia</Text>
+                    <Text style={styles.primaryButtonText}>Publicar</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -150,6 +154,26 @@ const styles = StyleSheet.create({
         color: '#ff453a',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    typeSelector: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: 16,
+    },
+    typeButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#3a3a3c',
+    },
+    typeButtonSelected: {
+        backgroundColor: '#007AFF',
+        borderColor: '#007AFF',
+    },
+    typeButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
     },
 });
 

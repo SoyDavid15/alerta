@@ -1,8 +1,8 @@
+import { useTheme } from '@/theme/Theme';
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/theme/Theme';
 
 type NavBarProps = {
   activeTab: 'denuncias' | 'alertas';
@@ -35,22 +35,22 @@ const NavBar: React.FC<NavBarProps> = ({ activeTab, onSelectTab, onToggleSOS }) 
       <TouchableOpacity
         style={[styles.navBtn, styles.sosBg]}
         onPress={onToggleSOS}
-        accessibilityLabel="Abrir SOS"
+        accessibilityLabel="Añadir alertas"
         activeOpacity={0.9}
       >
         <Ionicons name="alert-circle" size={20} color="#fff" />
-        <Text style={[styles.navText, { color: '#fff' }]}>SOS</Text>
+        <Text style={[styles.navText, { color: '#fff' }]}>Nuevo</Text>
       </TouchableOpacity>
 
       {/* Denuncias */}
       <TouchableOpacity
         style={[styles.navBtn, isDenuncias && { backgroundColor: activeBg }]}
         onPress={() => onSelectTab('denuncias')}
-        accessibilityLabel="Ir a denuncias"
+        accessibilityLabel="Ir a publicaciones"
         activeOpacity={0.85}
       >
         <Ionicons name="list-outline" size={22} color={isDenuncias ? colors.text : colors.muted} />
-        <Text style={[styles.navText, { color: isDenuncias ? colors.text : colors.muted }]}>Denuncias</Text>
+        <Text style={[styles.navText, { color: isDenuncias ? colors.text : colors.muted }]}>Publicaciones</Text>
       </TouchableOpacity>
     </View>
   );
